@@ -4,3 +4,10 @@
   margin-top: 20px;
   border: 1px solid black;
 }
+
+.weekly-temperatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  border: 1px solid black;
+}

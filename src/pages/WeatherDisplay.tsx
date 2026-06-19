@@ -6,6 +6,7 @@ import "../css/weather-display.css";
 const WeatherDisplay = () => {
   const { state } = useLocation();
   const weatherData = state?.weatherData;
+  console.log(weatherData);
 
   const currentTemperature = weatherData?.current?.temperature_2m;
 
@@ -14,7 +15,17 @@ const WeatherDisplay = () => {
     time: Date;
   }
 
+  interface WeeklyData {
+    day: string;
+    maxTemperature: number;
+    minTemperature: number;
+  }
+
   const [hourlyTemperatures, setHourlyTemperatures] = useState<HourlyData[]>(
+    [],
+  );
+
+  const [weeklyTemperatures, setWeeklyTemperatures] = useState<WeeklyData[]>(
     [],
   );
 
@@ -33,7 +44,22 @@ const WeatherDisplay = () => {
       }
     }
     setHourlyTemperatures(hourlyTemperaturesToday);
-    console.log(hourlyTemperaturesToday);
+
+    const daysOfTheWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const weeklyTemperaturesData: WeeklyData[] = [];
+    for (const date in weatherData?.daily?.time || []) {
+      const time = weatherData?.daily?.time[date];
+      const maxTemperature = weatherData?.daily?.temperature_2m_max[date];
+      const minTemperature = weatherData?.daily?.temperature_2m_min[date];
+
+      weeklyTemperaturesData.push({
+        day: daysOfTheWeek[time.getDay()],
+        maxTemperature,
+        minTemperature,
+      });
+    }
+    setWeeklyTemperatures(weeklyTemperaturesData);
+    console.log(weeklyTemperaturesData);
   }, [weatherData]);
 
   return (
@@ -50,6 +76,18 @@ const WeatherDisplay = () => {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="weekly-temperatures">
+        {weeklyTemperatures.map((day, index) => (
+          <div key={index}>
+            <p>{day.day}</p>
+            <p>
+              {Math.round(day.maxTemperature)}°C /{" "}
+              {Math.round(day.minTemperature)}°C
             </p>
           </div>
         ))}
