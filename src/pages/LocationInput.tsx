@@ -28,10 +28,10 @@ const LocationInput = () => {
     const url = "https://api.open-meteo.com/v1/forecast";
     const params = {
       longitude: Number(longitude),
-      daily: ["temperature_2m_max", "temperature_2m_min"],
       latitude: Number(latitude),
-      hourly: "temperature_2m",
-      current: "temperature_2m",
+      daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
+      hourly: ["temperature_2m", "weather_code"],
+      current: ["temperature_2m", "weather_code"],
     };
 
     const responses = await fetchWeatherApi(url, params);
@@ -45,6 +45,7 @@ const LocationInput = () => {
       current: {
         time: new Date((Number(current.time()) + utcOffsetSeconds) * 1000),
         temperature_2m: current.variables(0)!.value(),
+        weather_code: current.variables(1)!.value(),
       },
       hourly: {
         time: Array.from(
@@ -62,6 +63,7 @@ const LocationInput = () => {
             ),
         ),
         temperature_2m: hourly.variables(0)!.valuesArray(),
+        weather_code: hourly.variables(1)!.valuesArray(),
       },
       daily: {
         time: Array.from(
@@ -78,8 +80,11 @@ const LocationInput = () => {
         ),
         temperature_2m_max: daily.variables(0)!.valuesArray(),
         temperature_2m_min: daily.variables(1)!.valuesArray(),
+        weather_code: daily.variables(2)!.valuesArray(),
       },
     };
+
+    console.log(weatherData);
 
     navigate("/weather", { state: { weatherData } });
   };

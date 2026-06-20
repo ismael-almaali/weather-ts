@@ -10,15 +10,19 @@ const WeatherDisplay = () => {
 
   const currentTemperature = weatherData?.current?.temperature_2m;
 
+  const currentWeatherCode = weatherData?.current?.weather_code;
+
   interface HourlyData {
     temperature: number;
     time: Date;
+    weatherCode: number;
   }
 
   interface WeeklyData {
     day: string;
     maxTemperature: number;
     minTemperature: number;
+    weatherCode: number;
   }
 
   const [hourlyTemperatures, setHourlyTemperatures] = useState<HourlyData[]>(
@@ -40,7 +44,8 @@ const WeatherDisplay = () => {
         // If it is, push the temperature and time to the hourlyTemperaturesToday array
         const time = weatherData?.hourly?.time[date];
         const temperature = weatherData?.hourly?.temperature_2m[date];
-        hourlyTemperaturesToday.push({ temperature, time });
+        const weatherCode = weatherData?.hourly?.weather_code[date];
+        hourlyTemperaturesToday.push({ temperature, time, weatherCode });
       }
     }
     setHourlyTemperatures(hourlyTemperaturesToday);
@@ -51,32 +56,47 @@ const WeatherDisplay = () => {
       const time = weatherData?.daily?.time[date];
       const maxTemperature = weatherData?.daily?.temperature_2m_max[date];
       const minTemperature = weatherData?.daily?.temperature_2m_min[date];
+      const weatherCode = weatherData?.daily?.weather_code[date];
 
       weeklyTemperaturesData.push({
         day: daysOfTheWeek[time.getDay()],
         maxTemperature,
         minTemperature,
+        weatherCode,
       });
     }
     setWeeklyTemperatures(weeklyTemperaturesData);
-    console.log(weeklyTemperaturesData);
   }, [weatherData]);
+
+  const getWeatherState = (code: number) => {
+    if (code === 0) return { state: "clear", icon: "☀️" };
+    if (code <= 3) return { state: "partly-cloudy", icon: "⛅" };
+    if (code <= 48) return { state: "foggy", icon: "🌁" };
+    if (code <= 57) return { state: "drizzle", icon: "🌦️" };
+    if (code <= 67 || (code >= 80 && code <= 82))
+      return { state: "raining", icon: "🌧️" };
+    if (code <= 77 || (code >= 85 && code <= 86))
+      return { state: "snowing", icon: "❄️" };
+    if (code >= 95) return { state: "thunder", icon: "⛈️" };
+    return { state: "clear", icon: "☀️" }; // fallback
+  };
 
   return (
     <>
       <h2>Location Name</h2>
       <h1>{Math.round(currentTemperature)}°C</h1>
+      <h1>{getWeatherState(currentWeatherCode)?.icon}</h1>
+      <p>{getWeatherState(currentWeatherCode)?.state}</p>
 
       <div className="hourly-temperatures">
         {hourlyTemperatures.map((hour, index) => (
           <div key={index}>
-            <p>
-              <p>{Math.round(hour.temperature)}°C</p>
-              {hour.time.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
+            <p>{Math.round(hour.temperature)}°C</p>
+            {hour.time.toLocaleTimeString([], {
+              hour: "numeric",
+              hour12: true,
+            })}
+            <p>{getWeatherState(hour.weatherCode)?.icon}</p>
           </div>
         ))}
       </div>
@@ -89,6 +109,7 @@ const WeatherDisplay = () => {
               {Math.round(day.maxTemperature)}°C /{" "}
               {Math.round(day.minTemperature)}°C
             </p>
+            <h1>{getWeatherState(day.weatherCode)?.icon}</h1>
           </div>
         ))}
       </div>
