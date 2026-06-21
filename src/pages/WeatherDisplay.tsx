@@ -1,16 +1,91 @@
-import { useLocation } from "react-router";
+import { useSearchParams } from "react-router";
 import { useState, useEffect } from "react";
+import { fetchWeatherApi } from "openmeteo";
 
 import "../css/weather-display.css";
 
 const WeatherDisplay = () => {
-  const { state } = useLocation();
-  const weatherData = state?.weatherData;
-  const locationName = state?.locationName;
+  const [weatherData, setWeatherData] = useState<any>();
 
-  const currentTemperature = weatherData?.current?.temperature_2m;
+  const [searchParams] = useSearchParams();
+  const latitude = searchParams.get("lat");
+  const longitude = searchParams.get("lon");
+  const locationName = searchParams.get("name");
 
-  const currentWeatherCode = weatherData?.current?.weather_code;
+  useEffect(() => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const url = "https://api.open-meteo.com/v1/forecast";
+    const params = {
+      longitude: longitude,
+      latitude: latitude,
+      daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
+      hourly: ["temperature_2m", "weather_code"],
+      current: ["temperature_2m", "weather_code"],
+      timezone: timezone,
+    };
+
+    const fetchData = async () => {
+      const responses = await fetchWeatherApi(url, params);
+      const response = responses[0];
+      const utcOffsetSeconds = response.utcOffsetSeconds();
+      const hourly = response.hourly()!;
+      const daily = response.daily()!;
+      const current = response.current()!;
+
+      const formattedWeatherData = {
+        current: {
+          time: new Date((Number(current.time()) + utcOffsetSeconds) * 1000),
+          temperature_2m: current.variables(0)!.value(),
+          weather_code: current.variables(1)!.value(),
+        },
+        hourly: {
+          time: Array.from(
+            {
+              length:
+                (Number(hourly.timeEnd()) - Number(hourly.time())) /
+                hourly.interval(),
+            },
+            (_, i) =>
+              new Date(
+                (Number(hourly.time()) +
+                  i * hourly.interval() +
+                  utcOffsetSeconds) *
+                  1000,
+              ),
+          ),
+          temperature_2m: hourly.variables(0)!.valuesArray(),
+          weather_code: hourly.variables(1)!.valuesArray(),
+        },
+        daily: {
+          time: Array.from(
+            {
+              length:
+                (Number(daily.timeEnd()) - Number(daily.time())) /
+                daily.interval(),
+            },
+            (_, i) =>
+              new Date(
+                (Number(daily.time()) +
+                  i * daily.interval() +
+                  utcOffsetSeconds) *
+                  1000,
+              ),
+          ),
+          temperature_2m_max: daily.variables(0)!.valuesArray(),
+          temperature_2m_min: daily.variables(1)!.valuesArray(),
+          weather_code: daily.variables(2)!.valuesArray(),
+        },
+      };
+
+      setWeatherData(formattedWeatherData);
+    };
+    fetchData();
+  }, [searchParams]);
+
+  //   const currentTemperature = weatherData?.current?.temperature_2m;
+
+  //   const currentWeatherCode = weatherData?.current?.weather_code;
 
   interface HourlyData {
     temperature: number;
@@ -32,6 +107,9 @@ const WeatherDisplay = () => {
   const [weeklyTemperatures, setWeeklyTemperatures] = useState<WeeklyData[]>(
     [],
   );
+
+  const [currentTemperature, setCurrentTemperature] = useState<number>();
+  const [currentWeatherCode, setCurrentWeatherCode] = useState<number>();
 
   useEffect(() => {
     const currentDate = new Date();
@@ -66,6 +144,9 @@ const WeatherDisplay = () => {
       });
     }
     setWeeklyTemperatures(weeklyTemperaturesData);
+
+    setCurrentWeatherCode(weatherData?.current?.weather_code);
+    setCurrentTemperature(weatherData?.current?.temperature_2m);
   }, [weatherData]);
 
   const getWeatherState = (code: number) => {
@@ -84,10 +165,10 @@ const WeatherDisplay = () => {
   return (
     <>
       <h2>{locationName}</h2>
-      <h1>{Math.round(currentTemperature)}°C</h1>
-      <h1>{getWeatherState(currentWeatherCode)?.icon}</h1>
-      <p>{getWeatherState(currentWeatherCode)?.state}</p>
-
+      {/* TODO: find a safer alternative to the non-null assertion operator */}
+      <h1>{Math.round(currentTemperature!)}°C</h1>
+      <h1>{getWeatherState(currentWeatherCode!)?.icon}</h1>
+      <p>{getWeatherState(currentWeatherCode!)?.state}</p>
       <div className="hourly-temperatures">
         {hourlyTemperatures.map((hour, index) => (
           <div key={index}>
@@ -100,7 +181,6 @@ const WeatherDisplay = () => {
           </div>
         ))}
       </div>
-
       <div className="weekly-temperatures">
         {weeklyTemperatures.map((day, index) => (
           <div key={index}>
