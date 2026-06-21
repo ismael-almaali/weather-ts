@@ -5,6 +5,11 @@ import { useNavigate } from "react-router";
 const LocationInput = () => {
   const [latitude, setLatitude] = useState<string>();
   const [longitude, setLongitude] = useState<string>();
+
+  // const [locationName, setLocationName] = useState<string>();
+
+  const [locationSearches, setLocationSearches] = useState<object[]>([]);
+
   const navigate = useNavigate();
 
   type Coordinate = "longitude" | "latitude";
@@ -89,25 +94,73 @@ const LocationInput = () => {
     navigate("/weather", { state: { weatherData } });
   };
 
-  return (
-    <form onSubmit={confirmCoordinates}>
-      <input
-        onChange={(e) => updateCoordinate(e, "latitude")}
-        placeholder="Enter latitude"
-        type="number"
-        step="any"
-        required
-      />
-      <input
-        onChange={(e) => updateCoordinate(e, "longitude")}
-        placeholder="Enter longitude"
-        type="number"
-        step="any"
-        required
-      />
+  const updateLocationName = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const locationName = event.target.value;
 
-      <button type="submit">Update Coordinates</button>
-    </form>
+    // setLocationName(locationName);
+
+    const resultCount = 5;
+
+    if (event.target.value.length >= 2) {
+      const response = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${locationName}&count=${resultCount}&language=en&format=json`,
+      );
+
+      const data = await response.json();
+
+      const newLocationSearches: object[] = [];
+
+      for (const location of data?.results) {
+        newLocationSearches.push(location);
+      }
+
+      setLocationSearches(newLocationSearches);
+
+      //   console.log(newLocationSearches);
+    }
+  };
+
+  return (
+    <>
+      <form onSubmit={confirmCoordinates}>
+        <input
+          onChange={(e) => updateCoordinate(e, "latitude")}
+          placeholder="Enter latitude"
+          type="number"
+          step="any"
+          required
+        />
+        <input
+          onChange={(e) => updateCoordinate(e, "longitude")}
+          placeholder="Enter longitude"
+          type="number"
+          step="any"
+          required
+        />
+
+        <button type="submit">Update Coordinates</button>
+      </form>
+
+      <form>
+        <input
+          onChange={updateLocationName}
+          placeholder="Enter location name"
+          type="text"
+        />
+      </form>
+
+      <div>
+        {locationSearches.map((location: any) => (
+          <div key={location.id}>
+            <p>
+              {location.name}, {location.admin1}, {location.country}
+            </p>
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 
