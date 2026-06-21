@@ -6,7 +6,7 @@ import "../css/weather-display.css";
 const WeatherDisplay = () => {
   const { state } = useLocation();
   const weatherData = state?.weatherData;
-  console.log(weatherData);
+  const locationName = state?.locationName;
 
   const currentTemperature = weatherData?.current?.temperature_2m;
 
@@ -83,7 +83,7 @@ const WeatherDisplay = () => {
 
   return (
     <>
-      <h2>Location Name</h2>
+      <h2>{locationName}</h2>
       <h1>{Math.round(currentTemperature)}°C</h1>
       <h1>{getWeatherState(currentWeatherCode)?.icon}</h1>
       <p>{getWeatherState(currentWeatherCode)?.state}</p>
