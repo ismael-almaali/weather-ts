@@ -1,161 +1,65 @@
 import { useState } from "react";
-import { fetchWeatherApi } from "openmeteo";
-import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router";
 
 const LocationInput = () => {
-  const [latitude, setLatitude] = useState<string>();
-  const [longitude, setLongitude] = useState<string>();
+  interface Location {
+    id: number;
+    name: string;
+    latitude: number;
+    longitude: number;
+    elevation: number;
+    feature_code: string;
+    country: string;
+    country_code: string;
+    country_id: number;
+    admin1: string;
+    admin1_id: number;
+    admin2: string;
+    admin2_id: number;
+    timezone: string;
+  }
 
-  // const [locationName, setLocationName] = useState<string>();
+  const [locationSearches, setLocationSearches] = useState<Location[]>([]);
 
-  const [locationSearches, setLocationSearches] = useState<object[]>([]);
-
-  const navigate = useNavigate();
-
-  type Coordinate = "longitude" | "latitude";
-
-  const updateCoordinate = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    coordinateType: Coordinate,
-  ) => {
-    if (coordinateType == "latitude") {
-      setLatitude(event.target.value);
-    } else if (coordinateType == "longitude") {
-      setLongitude(event.target.value);
-    }
-  };
-
-  const confirmCoordinates = async (
-    event: React.SubmitEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-
-    const url = "https://api.open-meteo.com/v1/forecast";
-    const params = {
-      longitude: Number(longitude),
-      latitude: Number(latitude),
-      daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
-      hourly: ["temperature_2m", "weather_code"],
-      current: ["temperature_2m", "weather_code"],
-    };
-
-    const responses = await fetchWeatherApi(url, params);
-    const response = responses[0];
-    const utcOffsetSeconds = response.utcOffsetSeconds();
-    const hourly = response.hourly()!;
-    const daily = response.daily()!;
-    const current = response.current()!;
-
-    const weatherData = {
-      current: {
-        time: new Date((Number(current.time()) + utcOffsetSeconds) * 1000),
-        temperature_2m: current.variables(0)!.value(),
-        weather_code: current.variables(1)!.value(),
-      },
-      hourly: {
-        time: Array.from(
-          {
-            length:
-              (Number(hourly.timeEnd()) - Number(hourly.time())) /
-              hourly.interval(),
-          },
-          (_, i) =>
-            new Date(
-              (Number(hourly.time()) +
-                i * hourly.interval() +
-                utcOffsetSeconds) *
-                1000,
-            ),
-        ),
-        temperature_2m: hourly.variables(0)!.valuesArray(),
-        weather_code: hourly.variables(1)!.valuesArray(),
-      },
-      daily: {
-        time: Array.from(
-          {
-            length:
-              (Number(daily.timeEnd()) - Number(daily.time())) /
-              daily.interval(),
-          },
-          (_, i) =>
-            new Date(
-              (Number(daily.time()) + i * daily.interval() + utcOffsetSeconds) *
-                1000,
-            ),
-        ),
-        temperature_2m_max: daily.variables(0)!.valuesArray(),
-        temperature_2m_min: daily.variables(1)!.valuesArray(),
-        weather_code: daily.variables(2)!.valuesArray(),
-      },
-    };
-
-    console.log(weatherData);
-
-    navigate("/weather", { state: { weatherData } });
-  };
+  // const navigate = useNavigate();
 
   const updateLocationName = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const locationName = event.target.value;
 
-    // setLocationName(locationName);
-
-    const resultCount = 5;
+    const resultsCount = 5;
 
     if (event.target.value.length >= 2) {
       const response = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${locationName}&count=${resultCount}&language=en&format=json`,
+        `https://geocoding-api.open-meteo.com/v1/search?name=${locationName}&count=${resultsCount}&language=en&format=json`,
       );
 
       const data = await response.json();
 
-      const newLocationSearches: object[] = [];
+      const newLocationSearches: Location[] = [];
 
       for (const location of data?.results) {
         newLocationSearches.push(location);
       }
 
       setLocationSearches(newLocationSearches);
-
-      //   console.log(newLocationSearches);
     }
   };
 
   return (
     <>
-      <form onSubmit={confirmCoordinates}>
-        <input
-          onChange={(e) => updateCoordinate(e, "latitude")}
-          placeholder="Enter latitude"
-          type="number"
-          step="any"
-          required
-        />
-        <input
-          onChange={(e) => updateCoordinate(e, "longitude")}
-          placeholder="Enter longitude"
-          type="number"
-          step="any"
-          required
-        />
-
-        <button type="submit">Update Coordinates</button>
-      </form>
-
-      <form>
-        <input
-          onChange={updateLocationName}
-          placeholder="Enter location name"
-          type="text"
-        />
-      </form>
+      <input
+        onChange={updateLocationName}
+        placeholder="Enter location name"
+        type="text"
+      />
 
       <div>
-        {locationSearches.map((location: any) => (
+        {locationSearches.map((location: Location) => (
           <div key={location.id}>
             <p>
-              {location.name}, {location.admin1}, {location.country}
+              {location.name}, {location.admin1}, {location.country_code}
             </p>
           </div>
         ))}
