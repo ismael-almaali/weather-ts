@@ -1,10 +1,22 @@
 import { useSearchParams } from "react-router";
 import { useState, useEffect } from "react";
+import type { CSSProperties } from "react";
 import { fetchWeatherApi } from "openmeteo";
 
 import "../css/weather-display.css";
+import { BeatLoader } from "react-spinners";
+
+const override: CSSProperties = {
+  display: "block",
+  margin: "0 auto",
+  borderColor: "black",
+};
 
 const WeatherDisplay = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [spinnerColor, setSpinnerColor] = useState("#6f6f6f");
+
+  // TODO: Change from any type to a custom type of the data I am retrieving
   const [weatherData, setWeatherData] = useState<any>();
 
   const [searchParams] = useSearchParams();
@@ -79,13 +91,10 @@ const WeatherDisplay = () => {
       };
 
       setWeatherData(formattedWeatherData);
+      setIsLoading(false);
     };
     fetchData();
   }, [searchParams]);
-
-  //   const currentTemperature = weatherData?.current?.temperature_2m;
-
-  //   const currentWeatherCode = weatherData?.current?.weather_code;
 
   interface HourlyData {
     temperature: number;
@@ -164,35 +173,57 @@ const WeatherDisplay = () => {
 
   return (
     <>
-      <h2>{locationName}</h2>
-      {/* TODO: find a safer alternative to the non-null assertion operator */}
-      <h1>{Math.round(currentTemperature!)}°C</h1>
-      <h1>{getWeatherState(currentWeatherCode!)?.icon}</h1>
-      <p>{getWeatherState(currentWeatherCode!)?.state}</p>
-      <div className="hourly-temperatures">
-        {hourlyTemperatures.map((hour, index) => (
-          <div key={index}>
-            <p>{Math.round(hour.temperature)}°C</p>
-            {hour.time.toLocaleTimeString([], {
-              hour: "numeric",
-              hour12: true,
-            })}
-            <p>{getWeatherState(hour.weatherCode)?.icon}</p>
+      {isLoading ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "300px",
+          }}
+        >
+          <BeatLoader
+            loading={isLoading}
+            color={spinnerColor}
+            cssOverride={override}
+            size={20}
+            aria-label={"Loading Spinner"}
+          />
+        </div>
+      ) : (
+        <>
+          {" "}
+          <h2>{locationName}</h2>
+          {/* TODO: find a safer alternative to the non-null assertion operator */}
+          <h1>{Math.round(currentTemperature!)}°C</h1>
+          <h1>{getWeatherState(currentWeatherCode!)?.icon}</h1>
+          <p>{getWeatherState(currentWeatherCode!)?.state}</p>
+          <div className="hourly-temperatures">
+            {hourlyTemperatures.map((hour, index) => (
+              <div key={index}>
+                <p>{Math.round(hour.temperature)}°C</p>
+                {hour.time.toLocaleTimeString([], {
+                  hour: "numeric",
+                  hour12: true,
+                })}
+                <p>{getWeatherState(hour.weatherCode)?.icon}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="weekly-temperatures">
-        {weeklyTemperatures.map((day, index) => (
-          <div key={index}>
-            <p>{day.day}</p>
-            <p>
-              {Math.round(day.maxTemperature)}°C /{" "}
-              {Math.round(day.minTemperature)}°C
-            </p>
-            <h1>{getWeatherState(day.weatherCode)?.icon}</h1>
+          <div className="weekly-temperatures">
+            {weeklyTemperatures.map((day, index) => (
+              <div key={index}>
+                <p>{day.day}</p>
+                <p>
+                  {Math.round(day.maxTemperature)}°C /{" "}
+                  {Math.round(day.minTemperature)}°C
+                </p>
+                <h1>{getWeatherState(day.weatherCode)?.icon}</h1>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </>
   );
 };
