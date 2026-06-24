@@ -126,8 +126,8 @@ const WeatherDisplay = () => {
 
     function getAndSetHourlyTemperatures() {
       // Loop through the hourly data and filter for today's temperatures only
-      for (const dateIndex in weatherData?.hourly?.time || []) {
-        const date = weatherData?.hourly?.time[dateIndex];
+      for (const [dateIndex, date] of weatherData?.hourly?.time.entries() ||
+        []) {
         // Check if the current date we are looking at is today
         if (date.getDate() === currentDate.getDate()) {
           // If it is, push the temperature and time to the hourlyTemperaturesToday array
@@ -148,14 +148,16 @@ const WeatherDisplay = () => {
     function getAndSetWeeklyTemperatures() {
       const daysOfTheWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const weeklyTemperaturesData: WeeklyData[] = [];
-      for (const date in weatherData?.daily?.time || []) {
-        const time = weatherData?.daily?.time[date];
-        const maxTemperature = weatherData?.daily?.temperature_2m_max[date];
-        const minTemperature = weatherData?.daily?.temperature_2m_min[date];
-        const weatherCode = weatherData?.daily?.weather_code[date];
+      for (const [dateIndex, date] of weatherData?.daily?.time.entries() ||
+        []) {
+        const maxTemperature =
+          weatherData?.daily?.temperature_2m_max[dateIndex];
+        const minTemperature =
+          weatherData?.daily?.temperature_2m_min[dateIndex];
+        const weatherCode = weatherData?.daily?.weather_code[dateIndex];
 
         weeklyTemperaturesData.push({
-          day: daysOfTheWeek[time.getDay()],
+          day: daysOfTheWeek[date.getDay()],
           maxTemperature,
           minTemperature,
           weatherCode,
