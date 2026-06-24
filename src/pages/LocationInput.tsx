@@ -1,25 +1,9 @@
 import "../css/location-input.css";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import type { Location } from "../types/weather";
 
 const LocationInput = () => {
-  interface Location {
-    id: number;
-    name: string;
-    latitude: number;
-    longitude: number;
-    elevation: number;
-    feature_code: string;
-    country: string;
-    country_code: string;
-    country_id: number;
-    admin1: string;
-    admin1_id: number;
-    admin2: string;
-    admin2_id: number;
-    timezone: string;
-  }
-
   const [locationSearches, setLocationSearches] = useState<Location[]>([]);
 
   const navigate = useNavigate();
