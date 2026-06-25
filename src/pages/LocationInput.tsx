@@ -1,5 +1,5 @@
 import "../css/location-input.css";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import type { Location } from "../types/weather";
 
@@ -8,6 +8,8 @@ const LocationInput = () => {
 
   const navigate = useNavigate();
 
+  const debounceTimer = useRef<number | null>(null);
+
   const updateLocationName = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -15,21 +17,36 @@ const LocationInput = () => {
 
     const resultsCount = 5;
 
-    if (event.target.value.length >= 2) {
-      const response = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${locationName}&count=${resultsCount}&language=en&format=json`,
-      );
-
-      const data = await response.json();
-
-      const newLocationSearches: Location[] = [];
-
-      for (const location of data?.results) {
-        newLocationSearches.push(location);
-      }
-
-      setLocationSearches(newLocationSearches);
+    // if the user deleted their search wipe all the results
+    if (!locationName) {
+      setLocationSearches([]);
+      return;
     }
+
+    // clear the debounce timer if there was already one going so that it resets
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // set a new debounce timer and show results when the user has stopped typing for 200ms.
+    // this prevents API calls on very single keystroke
+    debounceTimer.current = setTimeout(async () => {
+      if (locationName.length >= 2) {
+        const response = await fetch(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${locationName}&count=${resultsCount}&language=en&format=json`,
+        );
+
+        const data = await response.json();
+
+        const newLocationSearches: Location[] = [];
+
+        for (const location of data?.results) {
+          newLocationSearches.push(location);
+        }
+
+        setLocationSearches(newLocationSearches);
+      }
+    }, 200);
   };
 
   const selectLocation = async (event: React.MouseEvent<HTMLDivElement>) => {
