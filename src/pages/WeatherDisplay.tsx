@@ -31,23 +31,36 @@ const WeatherDisplay = () => {
 
   // in this useEffect function, fetch the weather data from the Open Meteo API based on the url parameters
   useEffect(() => {
+    // TODO: investigate interesting behavior of the output when timezone is not specified
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const url = "https://api.open-meteo.com/v1/forecast";
     const params = {
-      longitude: longitude,
-      latitude: latitude,
+      longitude,
+      latitude,
       daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
       hourly: ["temperature_2m", "weather_code"],
       current: ["temperature_2m", "weather_code"],
-      timezone: timezone,
+      timezone,
     };
 
     const fetchData = async () => {
       try {
         const responses = await fetchWeatherApi(url, params);
         const response = responses[0];
+
+        if (
+          !response ||
+          !response.current() ||
+          !response.hourly() ||
+          !response.daily() ||
+          !response.utcOffsetSeconds()
+        ) {
+          throw new Error("bad API return");
+        }
+
         const utcOffsetSeconds = response.utcOffsetSeconds();
+
         const hourly = response.hourly()!;
         const daily = response.daily()!;
         const current = response.current()!;
@@ -186,6 +199,17 @@ const WeatherDisplay = () => {
     return { state: "unknown", icon: "❓" };
   };
 
+  function toPascalCase(input: string): string {
+    return input
+      .split(" ")
+      .map((word) =>
+        word.length === 0
+          ? word
+          : word[0].toUpperCase() + word.slice(1).toLowerCase(),
+      )
+      .join(" ");
+  }
+
   if (isError) {
     return (
       <div
@@ -196,7 +220,9 @@ const WeatherDisplay = () => {
           height: "300px",
         }}
       >
-        <h1>There was an error fetching the weather data.</h1>
+        <h1>
+          There was an error fetching the weather data. Please try again later.
+        </h1>
       </div>
     );
   } else {
@@ -221,9 +247,8 @@ const WeatherDisplay = () => {
           </div>
         ) : (
           <>
-            {" "}
-            <h2>{locationName}</h2>
             {/* TODO: find a safer alternative to the non-null assertion operator */}
+            <h2>{toPascalCase(locationName!)}</h2>
             <h1>{Math.round(currentTemperature!)}°C</h1>
             <h1>{getWeatherState(currentWeatherCode!)?.icon}</h1>
             <p>{getWeatherState(currentWeatherCode!)?.state}</p>
