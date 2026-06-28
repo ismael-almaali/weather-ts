@@ -19,7 +19,7 @@ const override: CSSProperties = {
 const WeatherDisplay = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [spinnerColor, setSpinnerColor] = useState("#6f6f6f");
+  const spinnerColor = "#6f6f6f";
 
   // TODO: Change from any type to a custom type of the data I am retrieving
   const [weatherData, setWeatherData] = useState<any>();
@@ -252,17 +252,29 @@ const WeatherDisplay = () => {
             <h1>{Math.round(currentTemperature!)}°C</h1>
             <h1>{getWeatherState(currentWeatherCode!)?.icon}</h1>
             <p>{getWeatherState(currentWeatherCode!)?.state}</p>
-            <div className="hourly-temperatures">
-              {hourlyTemperatures.map((hour, index) => (
-                <div key={index}>
-                  <p>{Math.round(hour.temperature)}°C</p>
-                  {hour.time.toLocaleTimeString([], {
-                    hour: "numeric",
-                    hour12: true,
-                  })}
-                  <p>{getWeatherState(hour.weatherCode)?.icon}</p>
-                </div>
-              ))}
+            <div className="hourly-temperatures-container">
+              {hourlyTemperatures.map((hour, index) => {
+                const weatherState = getWeatherState(hour.weatherCode);
+                const time = hour.time.toLocaleTimeString([], {
+                  hour: "numeric",
+                  hour12: true,
+                });
+                const temperature = Math.round(hour.temperature);
+
+                const currentDate = new Date();
+                const currentHour = currentDate.getHours();
+                const isCurrentHour = currentHour === hour.time.getHours();
+
+                if (hour.time.getHours() >= currentHour) {
+                  return (
+                    <div key={index}>
+                      <p>{temperature}°C</p>
+                      <p>{isCurrentHour ? "Now" : time}</p>
+                      <p>{weatherState?.icon}</p>
+                    </div>
+                  );
+                }
+              })}
             </div>
             <div className="weekly-temperatures">
               {weeklyTemperatures.map((day, index) => (
